@@ -12,6 +12,11 @@
       "name": "gitlab-collaboration",
       "description": "Complete GitLab workflow automation plugin for team collaboration. Automates issue creation, branch management, and merge request workflows with interactive questions or JSON file input.",
       "source": "./plugins/gitlab-collaboration"
+    },
+    {
+      "name": "business-doc-maker",
+      "description": "Business document (Business Scenario/Test Case) generation and analysis plugin. Creates structured requirement documents in JSON schema, analyzes implementation gaps by comparing with codebase, and automatically generates actionable development plans.",
+      "source": "./plugins/business-doc-maker"
     }
   ]
 }

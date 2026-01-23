@@ -426,10 +426,22 @@ class GitLabWorkflow:
             raise Exception(f"Failed to get current branch: {e}")
 
     def get_branch_commits(self, branch_name: str, base_branch: str = 'main') -> List[Dict]:
-        """Get commit history for a branch compared to base branch"""
+        """Get commit history for a branch compared to remote base branch"""
         try:
+            # Use remote base branch to ensure we only get commits from current branch work
+            remote = self.get_remote_name()
+            remote_base = f'{remote}/{base_branch}'
+
+            # Fetch latest to ensure we have up-to-date remote refs
+            try:
+                subprocess.run(['git', 'fetch', remote, base_branch],
+                             capture_output=True, check=True)
+            except subprocess.CalledProcessError:
+                # If fetch fails, continue with local comparison
+                pass
+
             result = subprocess.run(
-                ['git', 'log', f'{base_branch}..{branch_name}', '--format=%H%n%s%n%b%n%an%n%ae%n%ad%n---COMMIT---'],
+                ['git', 'log', f'{remote_base}..{branch_name}', '--format=%H%n%s%n%b%n%an%n%ae%n%ad%n---COMMIT---'],
                 capture_output=True,
                 text=True,
                 check=True
@@ -461,10 +473,14 @@ class GitLabWorkflow:
             raise Exception(f"Failed to get branch commits: {e}")
 
     def get_branch_diff_stats(self, branch_name: str, base_branch: str = 'main') -> Dict:
-        """Get diff statistics for a branch"""
+        """Get diff statistics for a branch compared to remote base branch"""
         try:
+            # Use remote base branch to ensure we only count current branch changes
+            remote = self.get_remote_name()
+            remote_base = f'{remote}/{base_branch}'
+
             result = subprocess.run(
-                ['git', 'diff', '--shortstat', f'{base_branch}...{branch_name}'],
+                ['git', 'diff', '--shortstat', f'{remote_base}...{branch_name}'],
                 capture_output=True,
                 text=True,
                 check=True

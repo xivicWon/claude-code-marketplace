@@ -1,9 +1,9 @@
 {
   "name": "baubau",
   "version": "1.0.0",
-  "description": "jaimewon local plugin marketplace for development workflow automation",
+  "description": "xivic's plugin marketplace for development workflow automation",
   "owner": {
-    "name": "jaimewon",
+    "name": "xivic",
     "email": "dev@xivic.com"
   },
   "license": "MIT",

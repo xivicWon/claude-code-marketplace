@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GitLab Issue Template",
+  "description": "Template for creating GitLab issues with gitlab-workflow",
+  "type": "object",
+  "properties": {
+    "asana": {
+      "type": "string",
+      "description": "Asana issue identifier (e.g., 'VTM-1372', '1372', '1400')",
+      "examples": ["VTM-1372", "1372", "1400"]
+    },
+    "title": {
+      "type": "string",
+      "description": "GitLab issue title (required)",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "description": "Issue description (supports markdown, use \\n for newlines)"
+    },
+    "labels": {
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of label strings"
+        },
+        {
+          "type": "string",
+          "description": "Comma-separated label string"
+        }
+      ],
+      "description": "Issue labels (array or comma-separated string)"
+    },
+    "push": {
+      "type": "boolean",
+      "description": "Auto-push branch to remote (default: false)",
+      "default": false
+    }
+  },
+  "required": ["asana", "title"],
+  "additionalProperties": false
+}

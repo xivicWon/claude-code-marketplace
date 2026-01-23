@@ -1,0 +1,17 @@
+{
+  "name": "baubau",
+  "version": "1.0.0",
+  "description": "jaimewon local plugin marketplace for development workflow automation",
+  "owner": {
+    "name": "jaimewon",
+    "email": "dev@xivic.com"
+  },
+  "license": "MIT",
+  "plugins": [
+    {
+      "name": "gitlab-collaboration",
+      "description": "Complete GitLab workflow automation plugin for team collaboration. Automates issue creation, branch management, and merge request workflows with interactive questions or JSON file input.",
+      "source": "./plugins/gitlab-collaboration"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "business-doc-maker",
+  "version": "1.0.0",
+  "description": "프로젝트를 위한 비즈니스 문서(BS/TC) 생성 및 분석 플러그인. 요구사항 문서를 구조화된 JSON 스키마로 작성하고, 코드베이스와 비교하여 구현 갭을 분석하며, 실행 가능한 개발 계획을 자동 생성합니다.",
+  "author": {
+    "name": "xivic",
+    "email": "dev@xivic.com"
+  }
+}

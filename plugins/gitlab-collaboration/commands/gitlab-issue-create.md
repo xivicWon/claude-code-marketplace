@@ -29,10 +29,29 @@ The command will interactively ask you for:
 This command automates the complete workflow for starting new work:
 
 1. ✅ Creates GitLab issue with title and description
-2. ✅ Generates branch name: `{issue-code}/{gitlab-issue#}-{summary}`
-3. ✅ Creates and checks out new branch from base branch
-4. ✅ Optionally pushes branch to remote
-5. ✅ Saves issue.json for reference
+2. ✅ **Handles uncommitted changes** (if any) with user choices
+3. ✅ Generates branch name: `{issue-code}/{gitlab-issue#}-{summary}`
+4. ✅ Creates and checks out new branch from base branch
+5. ✅ Optionally pushes branch to remote
+6. ✅ Saves issue.json for reference
+
+### Dirty Working Directory Handling
+
+If you have uncommitted changes when running this command, you'll be prompted with options:
+
+**Option 1: Move changes to new branch (Recommended)**
+- Stash your changes
+- Create new branch from base
+- Apply stashed changes to new branch
+- *Use case: "These changes are for the new issue I'm creating!"*
+
+**Option 2: Commit to current branch**
+- Commit all changes to current branch
+- Create clean new branch
+- *Use case: "Let me save current work first, then start fresh"*
+
+**Option 3: Cancel**
+- Abort operation (issue will still be created if already created)
 
 ## Command Execution
 
@@ -69,10 +88,33 @@ Claude: Let me create a GitLab issue for you.
         ✅ Created issue #342: Add logout button
            URL: http://gitlab.com/project/issues/342
 
+        ⚠️  Working directory has 3 uncommitted change(s)
+           Current branch: main
+
+           Modified files:
+           - src/App.tsx
+           - src/components/Nav.tsx
+           - package.json
+
+        📝 What would you like to do?
+           1. Move changes to new branch (Recommended)
+              → Stash → Create new branch → Apply stashed changes
+           2. Commit to current branch (main)
+              → Commit here → Create clean new branch
+           3. Cancel
+
+        👉 Choose (1/2/3): 1
+
+        📦 Stashing changes...
+        ✅ Stashed changes: Auto-stash for new issue branch
+
         🌿 Creating branch: vtm-1372/342-add-logout-button
         🔄 Fetching latest changes from gitlab...
         ✅ Created branch: vtm-1372/342-add-logout-button
            Based on: gitlab/main
+
+        📦 Applying stashed changes to new branch...
+        ✅ Applied stashed changes
 
         📤 Pushing branch to remote...
         ✅ Pushed branch: vtm-1372/342-add-logout-button

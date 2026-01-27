@@ -5,6 +5,54 @@ All notable changes to the GitLab Collaboration plugin will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-01-27
+
+### Added
+- **Interactive environment setup** with `/gitlab-init` command
+  - Step-by-step wizard for first-time configuration
+  - Automatic `.claude/.env.gitlab-workflow` file creation
+  - Secure token input with getpass (hidden input)
+  - Input validation for URL, token format, and project path
+  - Automatic backup of existing configuration
+  - Secure file permissions (600) automatically set
+  - Auto-runs doctor validation after setup
+- **Dirty working directory handling** for `/gitlab-issue-create` and `/gitlab-mr`
+  - **For issue creation**: Choose to move changes to new branch or commit to current
+  - **For MR creation**: Choose to commit to current branch or move to temp branch
+  - Interactive prompts with recommended options
+  - Stash/unstash mechanism for safe change management
+  - Context-aware user choices based on workflow stage
+- **New command**: `commands/gitlab-init.md`
+- **New skill**: `skills/gitlab-init/SKILL.md`
+- **Python enhancements**:
+  - `initialize_env_file()` function for interactive setup
+  - `handle_dirty_working_directory_for_issue_create()` for issue workflow
+  - `handle_dirty_working_directory_for_mr()` for MR workflow
+  - `commit_current_changes()` for auto-commit
+  - `stash_changes()` and `pop_stash()` for stash management
+  - Token masking in output for security
+  - Comprehensive error handling and user guidance
+
+### Changed
+- **Plugin version**: 1.2.0 → 1.4.0
+- **`create_branch()` method**: Added `skip_dirty_check` parameter
+- **`full_workflow()` method**: Now handles dirty state before branch creation
+- **`create_merge_request()` method**: Now handles dirty state before MR creation
+- **Help text**: Updated to include `/gitlab-init` as first step
+- **Workflow examples**: Now start with initialization step
+- **Command documentation**: Added dirty handling sections to gitlab-issue-create and gitlab-mr
+
+### Benefits
+- **Easier onboarding**: New users can set up in minutes
+- **Error prevention**: Input validation catches configuration mistakes
+- **No lost work**: Dirty changes are handled gracefully with user control
+- **Context-aware UX**: Different default options for issue vs MR creation
+- **Security**: Automatic file permissions and token masking
+- **Better UX**: Interactive prompts vs. manual file editing or command failures
+
+### Migration
+No action needed for existing users. All new features are additive and backward compatible.
+
 ## [1.2.0] - 2026-01-27
 
 ### Added

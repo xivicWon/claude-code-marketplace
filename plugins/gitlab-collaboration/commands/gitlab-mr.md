@@ -25,16 +25,37 @@ The command will interactively ask you for:
 
 This command creates a professional merge request by:
 
-1. ✅ Analyzing git history of current branch vs target branch
-2. ✅ Fetching linked issue details from GitLab (if issue number provided)
-3. ✅ Generating comprehensive MR description with:
+1. ✅ **Handles uncommitted changes** (if any) with user choices
+2. ✅ Analyzing git history of current branch vs target branch
+3. ✅ Fetching linked issue details from GitLab (if issue number provided)
+4. ✅ Generating comprehensive MR description with:
    - **Issue Summary**: title, status, labels, URL
    - **Requirements (요구사항)**: From issue description
    - **Implementation (구현 내용)**: Summary from commits
    - **Change Statistics**: Files changed, insertions, deletions
    - **Detailed Commit History**: With authors and dates
-4. ✅ Creating merge request with `Closes #issue` for auto-close
-5. ✅ Providing MR URL for quick access
+5. ✅ Creating merge request with `Closes #issue` for auto-close
+6. ✅ Providing MR URL for quick access
+
+### Dirty Working Directory Handling
+
+If you have uncommitted changes when creating MR, you'll be prompted with options:
+
+**Option 1: Commit to current branch (Recommended)**
+- Add all changes
+- Commit to current branch
+- Create MR including these changes
+- *Use case: "These changes are part of this MR!"*
+
+**Option 2: Move to temporary branch**
+- Stash your changes
+- Create temporary branch with WIP changes
+- Switch back to clean source branch
+- Create MR without these changes
+- *Use case: "I need to separate this work for later"*
+
+**Option 3: Cancel**
+- Abort MR creation
 
 ## Command Execution
 

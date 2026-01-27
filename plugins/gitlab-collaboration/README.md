@@ -2,10 +2,12 @@
 
 Complete GitLab workflow automation plugin for team collaboration. Automates issue creation, branch management, and merge request workflows with both direct commands and AI-assisted skills.
 
-**Version**: 1.2.0
+**Version**: 1.4.0
 
 ## Features
 
+✅ **Interactive environment setup** with step-by-step wizard
+✅ **Intelligent dirty working directory handling** with context-aware options
 ✅ Create GitLab issues and branches automatically
 ✅ Update issue descriptions from git commit history
 ✅ Create merge requests with auto-generated comprehensive descriptions
@@ -14,32 +16,40 @@ Complete GitLab workflow automation plugin for team collaboration. Automates iss
 ✅ Auto-close issues when MR is merged
 ✅ Requirements vs Implementation tracking
 ✅ Conventional Commits support
+✅ Secure token handling with automatic file permissions
+✅ Safe stash/unstash mechanism for work-in-progress changes
 
 ## Quick Start
 
-1. **Validate environment** (run this first!):
+1. **Initialize environment** (first time only):
+   ```bash
+   /gitlab-init
+   ```
+   This interactive wizard will guide you through setting up your GitLab credentials and configuration.
+
+2. **Validate environment**:
    ```bash
    /gitlab-doctor
    ```
 
-2. **Create issue and branch**:
+3. **Create issue and branch**:
    ```bash
    /gitlab-issue-create
    ```
 
-3. **Make changes and commit**:
+4. **Make changes and commit**:
    ```bash
    git add .
    git commit -m "feat: implement feature"
    git push
    ```
 
-4. **Update issue with requirements**:
+5. **Update issue with requirements**:
    ```bash
    /gitlab-issue-update
    ```
 
-5. **Create merge request**:
+6. **Create merge request**:
    ```bash
    /gitlab-mr
    ```
@@ -50,6 +60,7 @@ Direct execution commands for quick workflows:
 
 | Command | Description |
 |---------|-------------|
+| `/gitlab-init` | **Initialize environment with interactive setup wizard** |
 | `/gitlab-doctor` | Validate GitLab workflow environment setup |
 | `/gitlab-issue-create` | Create GitLab issue and branch interactively |
 | `/gitlab-issue-update` | Update issue description from git commits |
@@ -63,6 +74,7 @@ AI-assisted workflows for more complex scenarios:
 
 | Skill | Description |
 |-------|-------------|
+| `gitlab-init` | **Interactive environment setup with AI guidance** |
 | `gitlab-doctor` | Environment validation with AI guidance |
 | `gitlab-issue-create` | Issue creation with AI-driven interactive workflow |
 | `gitlab-issue-update` | Issue updates with commit analysis |
@@ -71,6 +83,17 @@ AI-assisted workflows for more complex scenarios:
 See `skills/` directory for detailed documentation.
 
 ## Environment Setup
+
+### Option 1: Interactive Setup (Recommended)
+
+Use the interactive wizard:
+```bash
+/gitlab-init
+```
+
+This will guide you through setting up all required configuration.
+
+### Option 2: Manual Setup
 
 Create `.claude/.env.gitlab-workflow` in your git repository root:
 

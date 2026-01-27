@@ -5,20 +5,24 @@
 ## 🚀 가장 많이 사용하는 명령어
 
 ```bash
-# 0️⃣ 환경 설정 검증 (처음 사용 전 필수!)
-/gitlab-workflow doctor
+# 0️⃣ 초기 설정 (처음 한 번만!)
+/gitlab-init
+# → 대화형 설정 마법사로 .env 파일 자동 생성
 
-# 1️⃣ 인터랙티브 모드로 이슈 생성 (가장 추천)
-/gitlab-workflow create
+# 1️⃣ 환경 설정 검증
+/gitlab-doctor
 
-# 2️⃣ JSON 파일로 이슈 생성 (문서화된 기능)
-/gitlab-workflow create --from-file docs/requirements/vtm-1372/342/issue.json
+# 2️⃣ 인터랙티브 모드로 이슈 생성 (가장 추천)
+/gitlab-issue-create
 
-# 3️⃣ Git 히스토리로 이슈 업데이트 (이슈 번호 자동!)
-/gitlab-workflow update
+# 3️⃣ JSON 파일로 이슈 생성 (문서화된 기능)
+/gitlab-issue-create --from-file docs/requirements/vtm-1372/342/issue.json
 
-# 4️⃣ MR 생성
-/gitlab-workflow mr
+# 4️⃣ Git 히스토리로 이슈 업데이트 (이슈 번호 자동!)
+/gitlab-issue-update
+
+# 5️⃣ MR 생성
+/gitlab-mr
 ```
 
 ## 📋 JSON 파일 템플릿
@@ -46,9 +50,22 @@
 
 ## ⚡ 빠른 워크플로우
 
+### 처음 사용하는 경우
+```bash
+# 1. 초기 설정 (대화형)
+/gitlab-init
+# → GitLab URL 입력
+# → 토큰 입력 (자동 숨김 처리)
+# → 프로젝트 경로 입력
+# → .env 파일 자동 생성 (600 권한)
+
+# 2. 검증
+/gitlab-doctor
+```
+
 ### 인터랙티브 모드
 ```bash
-/gitlab-workflow create
+/gitlab-issue-create
 # → 질문에 답변
 # → 이슈 생성됨
 # → 브랜치 생성됨
@@ -59,16 +76,16 @@ git commit -m "작업 내용"
 git push
 
 # 이슈를 요구사항으로 업데이트 (번호 자동 추출)
-/gitlab-workflow update
+/gitlab-issue-update
 
-/gitlab-workflow mr
+/gitlab-mr
 # → MR 생성 (변경사항 자동 요약)
 ```
 
 ### JSON 파일 모드
 ```bash
 # issue.json 작성
-/gitlab-workflow create --from-file issue.json
+/gitlab-issue-create --from-file issue.json
 # → 자동 생성
 
 git add .
@@ -76,7 +93,7 @@ git commit -m "작업 내용"
 git push
 
 # 요구사항으로 이슈 갱신 (번호 자동)
-/gitlab-workflow update
+/gitlab-issue-update
 
 /gitlab-workflow mr
 # → 커밋 히스토리 기반 MR description 자동 생성

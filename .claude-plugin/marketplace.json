@@ -17,6 +17,11 @@
       "name": "business-doc-maker",
       "description": "Business document (Business Scenario/Test Case) generation and analysis plugin. Creates structured requirement documents in JSON schema, analyzes implementation gaps by comparing with codebase, and automatically generates actionable development plans.",
       "source": "./plugins/business-doc-maker"
+    },
+    {
+      "name": "question-pipeline",
+      "description": "Complete question processing pipeline with 6 skills: ambiguity detection, intent clarification, question normalization, pattern resolution, code generation, and drift detection.",
+      "source": "./plugins/question-pipeline"
     }
   ]
 }

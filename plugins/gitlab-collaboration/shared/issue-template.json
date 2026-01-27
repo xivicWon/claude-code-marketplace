@@ -4,9 +4,14 @@
   "description": "Template for creating GitLab issues with gitlab-workflow",
   "type": "object",
   "properties": {
+    "issueCode": {
+      "type": "string",
+      "description": "이슈코드 (e.g., 'VTM-1372', '1372', '1400')",
+      "examples": ["VTM-1372", "1372", "1400"]
+    },
     "asana": {
       "type": "string",
-      "description": "Asana issue identifier (e.g., 'VTM-1372', '1372', '1400')",
+      "description": "[DEPRECATED] Use 'issueCode' instead. Legacy field for backward compatibility.",
       "examples": ["VTM-1372", "1372", "1400"]
     },
     "title": {
@@ -38,8 +43,16 @@
       "type": "boolean",
       "description": "Auto-push branch to remote (default: false)",
       "default": false
+    },
+    "createBranch": {
+      "type": "boolean",
+      "description": "Create branch after issue creation (default: true)",
+      "default": true
     }
   },
-  "required": ["asana", "title"],
+  "anyOf": [
+    {"required": ["issueCode", "title"]},
+    {"required": ["asana", "title"]}
+  ],
   "additionalProperties": false
 }

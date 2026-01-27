@@ -105,7 +105,7 @@ class GitLabWorkflow:
 
     def validate_branch_name(self, branch_name: str) -> bool:
         """
-        Validate branch name follows {asana}/{gitlab}-{summary} format
+        Validate branch name follows {issue-code}/{gitlab}-{summary} format
 
         Args:
             branch_name: Branch name to validate
@@ -114,7 +114,7 @@ class GitLabWorkflow:
             True if valid, False otherwise
         """
         # Pattern: VTM-1372/307-feature-name or 1372/307-feature-name
-        # Asana part can be any string, GitLab part must be a number
+        # Issue code part can be any string, GitLab part must be a number
         pattern = r'^.+/\d+.*$'
         return bool(re.match(pattern, branch_name, re.IGNORECASE))
 
@@ -188,13 +188,56 @@ class GitLabWorkflow:
         )
         return issue
 
+    def is_working_directory_clean(self) -> bool:
+        """
+        Check if working directory is clean (no uncommitted changes)
+
+        Returns:
+            True if clean, False if dirty
+        """
+        try:
+            result = subprocess.run(
+                ['git', 'status', '--porcelain'],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            # If output is empty, working directory is clean
+            return len(result.stdout.strip()) == 0
+        except subprocess.CalledProcessError:
+            return False
+
+    def get_dirty_files(self) -> List[str]:
+        """
+        Get list of modified/untracked files
+
+        Returns:
+            List of file paths with changes
+        """
+        try:
+            result = subprocess.run(
+                ['git', 'status', '--porcelain'],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            files = []
+            for line in result.stdout.strip().split('\n'):
+                if line:
+                    # Format: "XY filename"
+                    files.append(line[3:])  # Skip status code
+            return files
+        except subprocess.CalledProcessError:
+            return []
+
     def create_branch(self, branch_name: str, ref: str = 'main') -> bool:
         """
-        Create Git branch locally and push to remote
+        Create Git branch locally from remote reference
 
         Args:
             branch_name: Name of the branch to create
             ref: Reference branch to create from (default: main)
+                 Can be: 'main', 'develop', 'origin/main', 'gitlab/develop'
 
         Returns:
             True if successful
@@ -203,22 +246,62 @@ class GitLabWorkflow:
         if not self.validate_branch_name(branch_name):
             raise ValueError(
                 f"Invalid branch name: {branch_name}\n"
-                f"Branch name must follow format: [Asana]/[GitLab#]-[summary]\n"
+                f"Branch name must follow format: [이슈코드]/[GitLab#]-[summary]\n"
                 f"Examples: VTM-999/307-feature-name, 1372/307-action-assignee-removal"
             )
 
+        # Check if working directory is clean
+        if not self.is_working_directory_clean():
+            dirty_files = self.get_dirty_files()
+            file_list = '\n'.join(f"  - {f}" for f in dirty_files[:10])  # Show first 10
+            if len(dirty_files) > 10:
+                file_list += f"\n  ... and {len(dirty_files) - 10} more files"
+
+            raise Exception(
+                f"Cannot create branch: Working directory has uncommitted changes\n"
+                f"\nModified/untracked files:\n{file_list}\n\n"
+                f"Please commit or stash your changes first:\n"
+                f"  git add .\n"
+                f"  git commit -m 'Your message'\n"
+                f"Or:\n"
+                f"  git stash\n"
+            )
+
         try:
-            # Get remote name
-            remote = self.get_remote_name()
+            # Parse ref to determine if it includes remote
+            if '/' in ref:
+                # ref already includes remote (e.g., 'origin/main', 'gitlab/develop')
+                remote_ref = ref
+                remote_name = ref.split('/')[0]
+            else:
+                # ref is just branch name (e.g., 'main', 'develop')
+                # Prepend default remote
+                remote_name = self.get_remote_name()
+                remote_ref = f'{remote_name}/{ref}'
 
-            # Fetch latest changes
-            subprocess.run(['git', 'fetch', remote], check=True, capture_output=True)
+            # Fetch latest changes from the remote
+            print(f"🔄 Fetching latest changes from {remote_name}...")
+            subprocess.run(['git', 'fetch', remote_name], check=True, capture_output=True)
 
-            # Create and checkout new branch
-            subprocess.run(['git', 'checkout', '-b', branch_name, f'{remote}/{ref}'],
+            # Verify that the remote ref exists
+            verify_result = subprocess.run(
+                ['git', 'rev-parse', '--verify', remote_ref],
+                capture_output=True,
+                text=True
+            )
+            if verify_result.returncode != 0:
+                raise Exception(
+                    f"Remote branch '{remote_ref}' not found\n"
+                    f"Available remote branches:\n"
+                    f"  git branch -r\n"
+                )
+
+            # Create and checkout new branch from remote ref
+            subprocess.run(['git', 'checkout', '-b', branch_name, remote_ref],
                          check=True, capture_output=True)
 
             print(f"✅ Created branch: {branch_name}")
+            print(f"   Based on: {remote_ref}")
             return True
 
         except subprocess.CalledProcessError as e:
@@ -263,7 +346,7 @@ class GitLabWorkflow:
     def save_issue_json(
         self,
         issue_iid: int,
-        asana_issue: str,
+        issue_code: str,
         branch_name: str,
         issue_title: str,
         issue_description: str,
@@ -272,30 +355,30 @@ class GitLabWorkflow:
     ) -> Optional[str]:
         """
         Save issue information to JSON file
-        
+
         Args:
             issue_iid: GitLab issue IID
-            asana_issue: Asana issue number
+            issue_code: 이슈코드 (e.g., VTM-1372 or 1372)
             branch_name: Branch name
             issue_title: Issue title
             issue_description: Issue description
             labels: Issue labels
             pushed: Whether branch was pushed
-            
+
         Returns:
             Path to saved JSON file, or None if issue_dir not configured
         """
         if not self.issue_dir:
             return None
-            
+
         # Create directory structure: [ISSUE_DIR]/[branch-name]/
         issue_path = Path(self.issue_dir) / branch_name
         issue_path.mkdir(parents=True, exist_ok=True)
-        
+
         # Prepare issue.json content
         issue_data = {
             "id": str(issue_iid),
-            "asana": asana_issue,
+            "issueCode": issue_code,
             "branch": branch_name,
             "title": issue_title,
             "description": issue_description,
@@ -791,7 +874,30 @@ class GitLabWorkflow:
         else:
             print("   ⚠️  Issue directory: Not configured (using default: docs/requirements)")
             results['issue_dir'] = True  # Not a failure
-        
+
+        # Check 7: Working directory status
+        print("\n🔍 Checking working directory status...")
+        if results.get('git_repo', False):
+            try:
+                is_clean = self.is_working_directory_clean()
+                if is_clean:
+                    print("   ✅ Working directory: Clean (no uncommitted changes)")
+                    results['working_dir_clean'] = True
+                else:
+                    dirty_files = self.get_dirty_files()
+                    print(f"   ⚠️  Working directory: Has uncommitted changes ({len(dirty_files)} files)")
+                    print("   💡 Commit or stash changes before creating new branches:")
+                    print("      git add . && git commit -m 'message'")
+                    print("      or: git stash")
+                    results['working_dir_clean'] = False
+                    # This is just a warning, not a failure for doctor
+            except Exception as e:
+                print(f"   ⚠️  Could not check working directory status: {str(e)}")
+                results['working_dir_clean'] = None
+        else:
+            print("   ⏭️  Skipped (not in git repository)")
+            results['working_dir_clean'] = None
+
         # Summary
         print("\n" + "="*60)
         if all_passed:
@@ -811,24 +917,26 @@ class GitLabWorkflow:
     def full_workflow(
         self,
         issue_title: str,
-        asana_issue: str,
+        issue_code: str,
         issue_description: Optional[str] = None,
         branch_name: Optional[str] = None,
         labels: Optional[str] = None,
         base_branch: str = 'main',
-        auto_push: bool = False
+        auto_push: bool = False,
+        create_branch: bool = True
     ) -> Dict:
         """
-        Execute full workflow: create issue -> create branch
+        Execute full workflow: create issue -> optionally create branch
 
         Args:
             issue_title: Title for the issue
-            asana_issue: Asana issue number (e.g., "1372")
+            issue_code: 이슈코드 (e.g., "VTM-1372" or "1372")
             issue_description: Description for the issue
-            branch_name: Custom branch name (must follow VTM-{asana}/{gitlab}-{summary} format)
+            branch_name: Custom branch name (must follow {issue-code}/{gitlab}-{summary} format)
             labels: Issue labels
             base_branch: Base branch to create from
             auto_push: Automatically push branch to remote
+            create_branch: Create branch after issue (default: True)
 
         Returns:
             Dictionary with issue and branch information
@@ -840,55 +948,63 @@ class GitLabWorkflow:
         print(f"✅ Created issue #{issue_iid}: {issue['title']}")
         print(f"   URL: {issue['web_url']}")
 
-        # Step 2: Generate or validate branch name
-        if not branch_name:
-            # Auto-generate branch name from issue
-            # Remove non-ASCII characters (including Korean) and convert to lowercase
-            sanitized_title = re.sub(r'[^a-zA-Z0-9\s-]', '', issue_title)
-            sanitized_title = re.sub(r'\s+', '-', sanitized_title.strip())
-            sanitized_title = sanitized_title[:50].lower()  # Limit length and convert to lowercase
+        # Step 2-4: Optionally create branch
+        pushed = False
+        if create_branch:
+            # Step 2: Generate or validate branch name
+            if not branch_name:
+                # Auto-generate branch name from issue
+                # Remove non-ASCII characters (including Korean) and convert to lowercase
+                sanitized_title = re.sub(r'[^a-zA-Z0-9\s-]', '', issue_title)
+                sanitized_title = re.sub(r'\s+', '-', sanitized_title.strip())
+                sanitized_title = sanitized_title[:50].lower()  # Limit length and convert to lowercase
 
-            # If title becomes empty after sanitization, use issue number only
-            if not sanitized_title or sanitized_title == '-':
-                branch_name = f"{asana_issue.lower()}/{issue_iid}"
-            else:
-                branch_name = f"{asana_issue.lower()}/{issue_iid}-{sanitized_title}"
-
-        # Step 3: Create branch
-        print(f"\n🌿 Creating branch: {branch_name}")
-        self.create_branch(branch_name, ref=base_branch)
-
-        # Step 4: Optionally push branch
-        if auto_push:
-            print(f"\n📤 Ready to push branch to remote: {branch_name}")
-            print(f"   Remote: {self.get_remote_name()}")
-
-            # Verify before push
-            try:
-                response = input("\n🔍 Push to remote? (y/n): ").strip().lower()
-                if response in ['y', 'yes', '예']:
-                    print(f"📤 Pushing branch to remote...")
-                    self.push_branch(branch_name)
+                # If title becomes empty after sanitization, use issue number only
+                if not sanitized_title or sanitized_title == '-':
+                    branch_name = f"{issue_code.lower()}/{issue_iid}"
                 else:
-                    print("⏸️  Push skipped. You can push manually later with: git push")
-                    auto_push = False  # Update flag to reflect actual state
-            except (EOFError, KeyboardInterrupt):
-                print("\n⏸️  Push cancelled. You can push manually later with: git push")
-                auto_push = False
+                    branch_name = f"{issue_code.lower()}/{issue_iid}-{sanitized_title}"
 
-        # Step 5: Save issue.json file
-        json_file = self.save_issue_json(
-            issue_iid=issue_iid,
-            asana_issue=asana_issue,
-            branch_name=branch_name,
-            issue_title=issue_title,
-            issue_description=issue_description or '',
-            labels=labels.split(',') if labels else [],
-            pushed=auto_push
-        )
-        
-        if json_file:
-            print(f"\n📄 Saved issue.json: {json_file}")
+            # Step 3: Create branch
+            print(f"\n🌿 Creating branch: {branch_name}")
+            self.create_branch(branch_name, ref=base_branch)
+
+            # Step 4: Optionally push branch
+            if auto_push:
+                print(f"\n📤 Ready to push branch to remote: {branch_name}")
+                print(f"   Remote: {self.get_remote_name()}")
+
+                # Verify before push
+                try:
+                    response = input("\n🔍 Push to remote? (y/n): ").strip().lower()
+                    if response in ['y', 'yes', '예']:
+                        print(f"📤 Pushing branch to remote...")
+                        self.push_branch(branch_name)
+                        pushed = True
+                    else:
+                        print("⏸️  Push skipped. You can push manually later with: git push")
+                except (EOFError, KeyboardInterrupt):
+                    print("\n⏸️  Push cancelled. You can push manually later with: git push")
+        else:
+            # No branch created
+            branch_name = None
+            print("\n⏸️  Branch creation skipped (issue only)")
+
+        # Step 5: Save issue.json file (only if branch was created)
+        json_file = None
+        if branch_name:
+            json_file = self.save_issue_json(
+                issue_iid=issue_iid,
+                issue_code=issue_code,
+                branch_name=branch_name,
+                issue_title=issue_title,
+                issue_description=issue_description or '',
+                labels=labels.split(',') if labels else [],
+                pushed=pushed
+            )
+
+            if json_file:
+                print(f"\n📄 Saved issue.json: {json_file}")
 
         return {
             'issue': {
@@ -897,19 +1013,13 @@ class GitLabWorkflow:
                 'url': issue['web_url']
             },
             'branch': branch_name,
-            'pushed': auto_push
+            'pushed': pushed
         }
 
 
 def main():
-    # Load environment variables from .env file
-    # Try to find .claude/.env.gitlab-workflow from current directory or git root
-    env_file_paths = [
-        '.claude/.env.gitlab-workflow',  # Current directory
-        '../../../.claude/.env.gitlab-workflow',  # If running from scripts/ directory
-    ]
-
-    # Try to get git root directory
+    # Load environment variables from .claude/.env.gitlab-workflow file ONLY (project-level config)
+    # Get git root directory
     try:
         result = subprocess.run(
             ['git', 'rev-parse', '--show-toplevel'],
@@ -918,15 +1028,14 @@ def main():
             check=True
         )
         git_root = result.stdout.strip()
-        env_file_paths.insert(0, os.path.join(git_root, '.claude/.env.gitlab-workflow'))
-    except:
-        pass
+        env_file_path = os.path.join(git_root, '.claude/.env.gitlab-workflow')
 
-    # Load the first existing .env file
-    for env_path in env_file_paths:
-        if os.path.exists(env_path):
-            load_env_file(env_path)
-            break
+        if os.path.exists(env_file_path):
+            load_env_file(env_file_path)
+        # else: No warning if file doesn't exist - env vars can be set manually
+    except subprocess.CalledProcessError:
+        # Not in a git repository - skip loading env file
+        pass
 
     parser = argparse.ArgumentParser(
         description='GitLab Workflow Automation',
@@ -934,13 +1043,13 @@ def main():
         epilog="""
 Examples:
   # Full workflow: create issue and branch
-  %(prog)s start "Fix login bug" --asana VTM-1372 --description "Details here" --labels "bug"
-  %(prog)s start "Add feature" --asana 1372 --labels "feature"
+  %(prog)s start "Fix login bug" --issue-code VTM-1372 --description "Details here" --labels "bug"
+  %(prog)s start "Add feature" --issue-code 1372 --labels "feature"
 
   # Create from JSON file
   %(prog)s start --from-file docs/requirements/vtm-1372/342/issue.json
 
-  # Create branch from existing issue (Asana can be any format)
+  # Create branch from existing issue (이슈코드 can be any format)
   %(prog)s branch VTM-1372/305-fix-login
   %(prog)s branch 1372/305-fix-login
 
@@ -956,24 +1065,25 @@ Examples:
     parser.add_argument('--token', help='Personal Access Token (or set GITLAB_TOKEN env var)')
     parser.add_argument('--project', help='Project ID or path (or set GITLAB_PROJECT env var)')
     parser.add_argument('--remote', help='Git remote name (or set GITLAB_REMOTE env var, default: auto-detect)')
-    parser.add_argument('--asana', help='Asana issue identifier (e.g., VTM-1372 or 1372)')
+    parser.add_argument('--issue-code', help='이슈코드 (e.g., VTM-1372 or 1372)')
 
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
 
     # Start workflow
-    start_parser = subparsers.add_parser('start', help='Start full workflow (issue + branch)')
+    start_parser = subparsers.add_parser('start', help='Start full workflow (issue + optionally branch)')
     start_parser.add_argument('title', nargs='?', help='Issue title (or use --from-file)')
     start_parser.add_argument('--from-file', help='Read issue information from JSON file')
     start_parser.add_argument('--description', help='Issue description')
     start_parser.add_argument('--labels', help='Issue labels (comma-separated)')
-    start_parser.add_argument('--branch', help='Custom branch name (must follow VTM-{asana}/{gitlab}-{summary})')
-    start_parser.add_argument('--base', default='main', help='Base branch (default: main)')
+    start_parser.add_argument('--branch', help='Custom branch name (must follow {issue-code}/{gitlab}-{summary})')
+    start_parser.add_argument('--base', help='Base branch (default: from BASE_BRANCH env var or "main")')
     start_parser.add_argument('--push', action='store_true', help='Auto-push branch to remote')
+    start_parser.add_argument('--no-branch', action='store_true', help='Create issue only, skip branch creation')
 
     # Create branch only
-    branch_parser = subparsers.add_parser('branch', help='Create branch (must follow VTM-{asana}/{gitlab} format)')
+    branch_parser = subparsers.add_parser('branch', help='Create branch (must follow {issue-code}/{gitlab} format)')
     branch_parser.add_argument('branch_name', help='Branch name (e.g., VTM-1372/305-feature)')
-    branch_parser.add_argument('--base', default='main', help='Base branch (default: main)')
+    branch_parser.add_argument('--base', help='Base branch (default: from BASE_BRANCH env var or "main")')
     branch_parser.add_argument('--push', action='store_true', help='Auto-push to remote')
 
     # Push branch
@@ -1000,19 +1110,21 @@ Examples:
     update_parser = subparsers.add_parser('update', help='Update issue from git history')
     update_parser.add_argument('issue_iid', type=int, nargs='?', help='GitLab issue IID to update (optional, extracted from branch name)')
     update_parser.add_argument('--branch', help='Branch name (default: current branch)')
-    update_parser.add_argument('--base', default='main', help='Base branch to compare (default: main)')
+    update_parser.add_argument('--base', help='Base branch to compare (default: from BASE_BRANCH env var or "main")')
     update_parser.add_argument('--update-title', action='store_true',
                                help='Update issue title from first commit')
 
     args = parser.parse_args()
 
-    # Get credentials
+    # Get credentials and configuration
     gitlab_url = args.url or os.getenv('GITLAB_URL')
     token = args.token or os.getenv('GITLAB_TOKEN')
     project_id = args.project or os.getenv('GITLAB_PROJECT')
     remote_name = args.remote or os.getenv('GITLAB_REMOTE')
-    asana_issue = args.asana or os.getenv('ASANA_ISSUE')
+    # Support both new (ISSUE_CODE) and legacy (ASANA_ISSUE) env vars for backward compatibility
+    issue_code = getattr(args, 'issue_code', None) or os.getenv('ISSUE_CODE') or os.getenv('ASANA_ISSUE')
     issue_dir = os.getenv('ISSUE_DIR')
+    base_branch_default = os.getenv('BASE_BRANCH', 'main')
 
     if not args.command:
         parser.print_help()
@@ -1063,7 +1175,7 @@ Examples:
    /gitlab-workflow create --from-file docs/requirements/vtm-1372/342/issue.json
 
    CLI mode:
-   gitlab_workflow.py start "Fix bug" --asana VTM-1372 --labels "bug"
+   gitlab_workflow.py start "Fix bug" --issue-code VTM-1372 --labels "bug"
 
 3. **update** - Update Issue from Git History (⭐ Auto-extracts issue #)
 
@@ -1103,7 +1215,7 @@ Examples:
 # Step 2: Create issue and branch
 /gitlab-workflow create
 # Answer questions:
-# - Asana: VTM-1372
+# - 이슈코드: VTM-1372
 # - Title: Add logout button
 # - Description: (optional)
 # - Labels: feature
@@ -1134,7 +1246,7 @@ Create: docs/requirements/vtm-1372/342/issue.json
 
 ```json
 {
-  "asana": "VTM-1372",
+  "issueCode": "VTM-1372",
   "title": "Add logout button",
   "description": "Add logout functionality to nav bar",
   "labels": ["feature", "ui"],
@@ -1167,7 +1279,7 @@ Then:
 
 ✨ **Auto-Save issue.json**
    When creating issues, automatically saves to:
-   docs/requirements/{asana}/{gitlab}/issue.json
+   docs/requirements/{issue-code}/{gitlab}/issue.json
 
 ═══════════════════════════════════════════════════════════════
 
@@ -1179,11 +1291,11 @@ Then:
    VTM-999/307-refactor
 
 ❌ Invalid:
-   342-feature (missing Asana)
+   342-feature (missing 이슈코드)
    VTM-1372-342 (wrong separator)
    feature-name (missing numbers)
 
-Format: {asana}/{gitlab#}-{summary}
+Format: {issue-code}/{gitlab#}-{summary}
 
 ═══════════════================================================================
 
@@ -1200,6 +1312,13 @@ GITLAB_PROJECT=withvtm_2.0/withvtm-fe
 # Optional
 GITLAB_REMOTE=gitlab
 ISSUE_DIR=docs/requirements
+BASE_BRANCH=main              # or: develop, origin/main, gitlab/develop
+```
+
+Note: BASE_BRANCH can be:
+  - Branch name only: main, develop (uses default remote)
+  - With remote: origin/main, gitlab/develop (explicit remote)
+  - Always fetches from remote to ensure latest code
 ```
 
 Get token:
@@ -1215,7 +1334,7 @@ Problem: "GITLAB_URL required"
 Solution: Create .claude/.env.gitlab-workflow with required vars
 
 Problem: "Invalid branch name"
-Solution: Use format {asana}/{gitlab#}-{summary}
+Solution: Use format {issue-code}/{gitlab#}-{summary}
 
 Problem: "No git remote found"
 Solution: git remote add gitlab http://your-gitlab-server.com/project.git
@@ -1261,9 +1380,9 @@ Example:
         print("Error: Project ID required (--project or GITLAB_PROJECT env var)", file=sys.stderr)
         sys.exit(1)
 
-    # Check Asana issue for start command
-    if args.command == 'start' and not asana_issue:
-        print("Error: Asana issue number required for start command (--asana or ASANA_ISSUE env var)", file=sys.stderr)
+    # Check issue code for start command
+    if args.command == 'start' and not issue_code:
+        print("Error: 이슈코드 required for start command (--issue-code or ISSUE_CODE env var)", file=sys.stderr)
         sys.exit(1)
 
     # Initialize workflow
@@ -1279,10 +1398,14 @@ Example:
 
                     # Extract data from JSON with fallbacks
                     title = issue_data.get('title', args.title)
-                    asana_issue = issue_data.get('asana', asana_issue)
+                    # Support both new (issueCode) and legacy (asana) fields
+                    issue_code = issue_data.get('issueCode') or issue_data.get('asana') or issue_code
                     description = issue_data.get('description', args.description)
                     labels = issue_data.get('labels')
                     push = issue_data.get('push', args.push)
+                    # Support createBranch field in JSON (default: True)
+                    create_branch_from_json = issue_data.get('createBranch', True)
+                    create_branch = create_branch_from_json and not args.no_branch
 
                     # Handle labels (can be list or comma-separated string)
                     if isinstance(labels, list):
@@ -1294,12 +1417,12 @@ Example:
                     if not title:
                         print("Error: Issue title is required (in JSON file or as argument)", file=sys.stderr)
                         sys.exit(1)
-                    if not asana_issue:
-                        print("Error: Asana issue is required (in JSON file or --asana)", file=sys.stderr)
+                    if not issue_code:
+                        print("Error: 이슈코드 is required (in JSON file or --issue-code)", file=sys.stderr)
                         sys.exit(1)
 
                     print(f"📄 Loaded issue data from: {args.from_file}")
-                    print(f"   Asana: {asana_issue}")
+                    print(f"   이슈코드: {issue_code}")
                     print(f"   Title: {title}")
                     if labels:
                         print(f"   Labels: {labels}")
@@ -1316,6 +1439,8 @@ Example:
                 description = args.description
                 labels = args.labels
                 push = args.push
+                # Default: create branch unless --no-branch is specified
+                create_branch = not args.no_branch
 
                 if not title:
                     print("Error: Issue title is required (provide title or use --from-file)", file=sys.stderr)
@@ -1323,12 +1448,13 @@ Example:
 
             result = workflow.full_workflow(
                 title,
-                asana_issue,
+                issue_code,
                 issue_description=description,
                 branch_name=args.branch,
                 labels=labels,
-                base_branch=args.base,
-                auto_push=push
+                base_branch=args.base or base_branch_default,
+                auto_push=push,
+                create_branch=create_branch
             )
             print(f"\n✅ Workflow completed!")
             print(f"   Issue: #{result['issue']['iid']} - {result['issue']['title']}")
@@ -1339,7 +1465,7 @@ Example:
                 print(f"   Next: Make your changes and run 'git push' or use 'gitlab_workflow.py push'")
 
         elif args.command == 'branch':
-            workflow.create_branch(args.branch_name, ref=args.base)
+            workflow.create_branch(args.branch_name, ref=args.base or base_branch_default)
             if args.push:
                 workflow.push_branch(args.branch_name)
 
@@ -1368,7 +1494,7 @@ Example:
             result = workflow.update_issue_from_branch(
                 issue_iid=args.issue_iid,
                 branch_name=args.branch,
-                base_branch=args.base,
+                base_branch=args.base or base_branch_default,
                 update_title=args.update_title
             )
 

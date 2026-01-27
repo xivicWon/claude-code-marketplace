@@ -1,8 +1,9 @@
 ---
 name: gitlab-issue-create
 description: Create GitLab issue and branch automatically. Asks for issue code, title, description, and labels interactively, then creates GitLab issue, generates branch name, checks out branch, and optionally pushes to remote. Trigger when user mentions "create GitLab issue", "new GitLab issue", "start new feature", "create issue and branch", or similar issue creation requests.
-version: 1.0.0
+version: 1.0.1
 updated: 2026-01-27
+type: command
 ---
 
 # GitLab Issue Create
@@ -16,6 +17,7 @@ Create GitLab issue and branch in one command.
 ```
 
 This will ask you:
+
 1. **이슈코드** (e.g., VTM-1372 or 1372)
 2. **Issue title** (e.g., "Add user dashboard")
 3. **Description** (optional, supports markdown)
@@ -71,6 +73,7 @@ If you have a pre-defined issue in JSON format:
 ```
 
 **JSON Format**:
+
 ```json
 {
   "issueCode": "VTM-1372",
@@ -83,6 +86,7 @@ If you have a pre-defined issue in JSON format:
 ```
 
 **Create issue only (no branch)**:
+
 ```json
 {
   "issueCode": "VTM-1372",
@@ -97,6 +101,7 @@ If you have a pre-defined issue in JSON format:
 Generated branches follow the format: `{issue-code}/{gitlab#}-{summary}`
 
 **Examples**:
+
 - `VTM-1372/342-add-logout-button`
 - `1372/343-fix-login-bug`
 - `1400/308-refactor-api`
@@ -106,20 +111,24 @@ Generated branches follow the format: `{issue-code}/{gitlab#}-{summary}`
 After creating issue and branch:
 
 1. **Make your changes**
+
    ```bash
    git add .
    git commit -m "Implement logout button"
    ```
 
 2. **Push commits**
+
    ```bash
    git push
    ```
 
 3. **Update issue description** (recommended)
+
    ```bash
    /gitlab-issue-update
    ```
+
    This updates the issue description with requirements from your commits.
 
 4. **Create merge request**
@@ -145,11 +154,13 @@ ISSUE_DIR=docs/requirements
 ```
 
 **BASE_BRANCH**: Set the default base branch for creating new branches (default: `main`)
+
 - Can be branch name only: `main`, `develop`, `master`
 - Can include remote: `origin/main`, `gitlab/develop`
 - Always creates from **remote** to ensure latest code
 
 To validate your setup, run:
+
 ```bash
 /gitlab-doctor
 ```
@@ -173,6 +184,7 @@ Or:
 ```
 
 **Solution**: Commit or stash your changes before creating a new branch:
+
 ```bash
 # Option 1: Commit changes
 git add .
@@ -192,6 +204,7 @@ Remote branch 'gitlab/develop' not found
 ```
 
 **Solution**: Check available remote branches and fix BASE_BRANCH:
+
 ```bash
 # List remote branches
 git branch -r

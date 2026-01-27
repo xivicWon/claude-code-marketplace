@@ -1,8 +1,9 @@
 ---
 name: gitlab-mr
 description: Create GitLab merge request with auto-generated comprehensive description. Analyzes git history, fetches linked issue details, generates MR description including issue summary, requirements, implementation details, change statistics, and commit history. Supports auto-close linked issues. Trigger when user mentions "create MR", "create merge request", "open MR", "submit for review", or similar merge request creation requests.
-version: 1.0.0
+version: 1.0.1
 updated: 2026-01-27
+type: command
 ---
 
 # GitLab Merge Request
@@ -16,6 +17,7 @@ Create merge request with auto-generated comprehensive description.
 ```
 
 This will ask you:
+
 1. **MR title** (e.g., "Add user dashboard")
 2. **Link to issue number** (optional, e.g., 342)
 3. **Target branch** (default: main)
@@ -25,13 +27,14 @@ This will ask you:
 ✅ Analyzes git history of your current branch
 ✅ Fetches linked issue details from GitLab
 ✅ Generates comprehensive MR description with:
-  - **Issue summary** (title, status, labels, URL)
-  - **Requirements** from issue description (요구사항)
-  - **Implementation** summary from commits (구현 내용)
-  - **Change statistics** (files, insertions, deletions)
-  - **Detailed commit history** with authors and dates
-✅ Creates merge request with auto-close link to issue
-✅ Provides MR URL for quick access
+
+- **Issue summary** (title, status, labels, URL)
+- **Requirements** from issue description (요구사항)
+- **Implementation** summary from commits (구현 내용)
+- **Change statistics** (files, insertions, deletions)
+- **Detailed commit history** with authors and dates
+  ✅ Creates merge request with auto-close link to issue
+  ✅ Provides MR URL for quick access
 
 ## Example Workflow
 
@@ -60,8 +63,10 @@ Claude: Creating merge request...
 The auto-generated description includes:
 
 ### 1. Issue Summary
+
 ```markdown
 ## 📋 Related Issue
+
 - **Issue**: #342 - Add user dashboard
 - **Status**: opened
 - **Labels**: feature, dashboard
@@ -69,14 +74,18 @@ The auto-generated description includes:
 ```
 
 ### 2. Requirements (from issue)
+
 ```markdown
 ## 📝 Requirements (요구사항)
+
 [Full issue description showing what was requested]
 ```
 
 ### 3. Implementation Summary
+
 ```markdown
 ## ✅ Implementation (구현 내용)
+
 - Implement dashboard UI components
 - Add analytics API endpoints
 - Create dashboard routing
@@ -85,19 +94,23 @@ The auto-generated description includes:
 ```
 
 ### 4. Change Statistics
+
 ```markdown
 ## 📊 Changes
+
 - **Files changed**: 12
 - **Insertions**: +456
 - **Deletions**: -23
 ```
 
 ### 5. Commit History
+
 ```markdown
 ## 📜 Commit History
+
 - `abc1234` feat: implement dashboard UI (John Doe, 2026-01-27)
 - `def5678` feat: add analytics API (Jane Smith, 2026-01-27)
-...
+  ...
 ```
 
 ## Create MR without Interactive Mode
@@ -109,6 +122,7 @@ The auto-generated description includes:
 ## Link Issue for Auto-Close
 
 When you provide an issue number, the MR will:
+
 - ✅ Include `Closes #342` in description
 - ✅ Auto-close the issue when MR is merged
 - ✅ Fetch and display issue requirements
@@ -121,6 +135,7 @@ Perfect for code reviews - shows **what was requested** vs **what was delivered*
 - **구현 내용 (Implementation)**: From your commit messages
 
 This makes it easy for reviewers to verify:
+
 1. All requirements were addressed
 2. No scope creep occurred
 3. Implementation matches expectations
@@ -128,16 +143,19 @@ This makes it easy for reviewers to verify:
 ## Advanced Options
 
 **Custom source branch**:
+
 ```bash
 /gitlab-mr "Title" --source my-branch --target main
 ```
 
 **Keep branch after merge**:
+
 ```bash
 /gitlab-mr "Title" --keep-branch
 ```
 
 **Custom description**:
+
 ```bash
 /gitlab-mr "Title" --description "Custom MR description"
 ```
@@ -145,6 +163,7 @@ This makes it easy for reviewers to verify:
 ## When to Use
 
 Run this command:
+
 - ✅ After completing your feature/fix
 - ✅ After updating the issue (`/gitlab-issue-update`)
 - ✅ Before requesting code review
@@ -153,10 +172,12 @@ Run this command:
 ## Best Practices
 
 1. **Update issue first**:
+
    ```bash
    /gitlab-issue-update
    /gitlab-mr
    ```
+
    This ensures MR description includes latest requirements.
 
 2. **Link to issue**:
@@ -179,6 +200,7 @@ GITLAB_PROJECT=withvtm_2.0/withvtm-fe
 ```
 
 To validate your setup, run:
+
 ```bash
 /gitlab-doctor
 ```
@@ -190,6 +212,7 @@ To validate your setup, run:
 - `/gitlab-doctor` - Validate environment
 
 For complete documentation, see:
+
 - `../../shared/references/COMMANDS.md` - Command reference
 - `../../shared/references/MR_DESCRIPTION_EXAMPLE.md` - MR description examples
 

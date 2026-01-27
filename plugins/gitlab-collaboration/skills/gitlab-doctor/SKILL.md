@@ -1,8 +1,9 @@
 ---
 name: gitlab-doctor
 description: Validate GitLab workflow environment setup and configuration. Checks environment variables, git repository status, git remote configuration, GitLab API connectivity, token permissions, and issue directory. Provides actionable fixes for any issues found. Trigger when user mentions "validate gitlab setup", "check gitlab config", "gitlab troubleshoot", "test gitlab connection", or similar validation/troubleshooting requests.
-version: 1.0.0
+version: 1.0.1
 updated: 2026-01-27
+type: command
 ---
 
 # GitLab Workflow Doctor
@@ -20,6 +21,7 @@ Validate your GitLab workflow environment setup.
 ## What It Checks
 
 ### ✅ 1. Environment Variables
+
 - `GITLAB_URL` - GitLab instance URL
 - `GITLAB_TOKEN` - Personal Access Token
 - `GITLAB_PROJECT` - Project ID or path
@@ -27,29 +29,35 @@ Validate your GitLab workflow environment setup.
 - `ISSUE_DIR` (optional) - Issue JSON save directory
 
 ### ✅ 2. Git Repository
+
 - Is current directory a git repository?
 - Is git installed and accessible?
 
 ### ✅ 3. Git Remote
+
 - Is remote configured?
 - Is remote URL accessible?
 - Does GITLAB_REMOTE match actual remotes?
 
 ### ✅ 4. GitLab API
+
 - Can connect to GitLab instance?
 - Is the URL correct?
 - Is network accessible?
 
 ### ✅ 5. Project Access
+
 - Does project exist?
 - Does token have access to project?
 - Is project path correct?
 
 ### ✅ 6. Token Permissions
+
 - Does token have required `api` scope?
 - Is token valid and not expired?
 
 ### ✅ 7. Issue Directory (optional)
+
 - Is ISSUE_DIR path valid?
 - Is directory writable?
 
@@ -173,6 +181,7 @@ Fix:
 ## When to Run
 
 Run doctor:
+
 - ✅ **Before first use** - validate setup
 - ✅ **After changing config** - verify changes
 - ✅ **When errors occur** - diagnose issues
@@ -182,6 +191,7 @@ Run doctor:
 ## Environment File Location
 
 Doctor looks for:
+
 ```
 .claude/.env.gitlab-workflow
 ```
@@ -189,6 +199,7 @@ Doctor looks for:
 In your git repository root.
 
 **Example file**:
+
 ```bash
 # Required
 GITLAB_URL=http://192.168.210.103:90
@@ -219,18 +230,24 @@ ISSUE_DIR=docs/requirements
 ## Common Issues
 
 ### Issue: "git: command not found"
+
 **Solution**: Install git
+
 - macOS: `brew install git`
 - Ubuntu: `sudo apt-get install git`
 
 ### Issue: "Permission denied"
+
 **Solution**: Check token has access to project
+
 - Token must have `api` scope
 - User must have access to the project
 - Project must be visible to token user
 
 ### Issue: "Network unreachable"
+
 **Solution**: Check network and GitLab URL
+
 - Verify GitLab server is running
 - Check firewall settings
 - Confirm GITLAB_URL format (include http:// or https://)
@@ -258,12 +275,14 @@ ISSUE_DIR=docs/requirements
 - `/gitlab-mr` - Create merge request
 
 For complete documentation, see:
+
 - `../../shared/references/COMMANDS.md` - Command reference
 - `../../shared/references/DOCTOR_GUIDE.md` - Detailed doctor guide
 
 ## Quick Start
 
 **First time setup**:
+
 ```bash
 # 1. Create environment file
 cat > .claude/.env.gitlab-workflow <<'EOF'

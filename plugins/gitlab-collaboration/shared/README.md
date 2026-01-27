@@ -96,25 +96,31 @@ BASE_BRANCH=main
 
 See `.env.gitlab-workflow.example` for a complete template.
 
-## Skills Using These Resources
+## Commands and Skills Using These Resources
 
-All GitLab collaboration skills use these shared resources:
+All GitLab collaboration commands and skills use these shared resources:
 
-1. **gitlab-issue-create** (`/gitlab-issue-create`)
+### Commands (Direct Execution)
+
+1. **gitlab-doctor** (`/gitlab-doctor`)
+   - Validates environment setup
+   - Uses: `gitlab_workflow.py doctor`, `DOCTOR_GUIDE.md`
+
+2. **gitlab-issue-create** (`/gitlab-issue-create`)
    - Creates GitLab issue and branch
    - Uses: `gitlab_workflow.py start`, `issue-template.json`
 
-2. **gitlab-issue-update** (`/gitlab-issue-update`)
+3. **gitlab-issue-update** (`/gitlab-issue-update`)
    - Updates issue from git commits
    - Uses: `gitlab_workflow.py update`
 
-3. **gitlab-mr** (`/gitlab-mr`)
+4. **gitlab-mr** (`/gitlab-mr`)
    - Creates merge request
    - Uses: `gitlab_workflow.py mr`, `MR_DESCRIPTION_EXAMPLE.md`
 
-4. **gitlab-doctor** (`/gitlab-doctor`)
-   - Validates environment
-   - Uses: `gitlab_workflow.py doctor`, `DOCTOR_GUIDE.md`
+### Skills (AI-Assisted Workflows)
+
+All skills provide the same functionality as commands but with AI-driven interactive workflows and additional context awareness. See `../skills/` directory for skill implementations.
 
 ## Development
 

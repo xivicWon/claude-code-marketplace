@@ -3,7 +3,6 @@ name: gitlab-issue-update
 description: Update GitLab issue description from git commit history. Auto-extracts issue number from current branch name, analyzes commits since divergence from main, generates requirements-focused summary, and updates issue description. Trigger when user mentions "update GitLab issue", "update issue description", "sync issue with commits", "update issue from commits", or similar issue update requests.
 version: 1.0.1
 updated: 2026-01-27
-type: command
 ---
 
 # GitLab Issue Update

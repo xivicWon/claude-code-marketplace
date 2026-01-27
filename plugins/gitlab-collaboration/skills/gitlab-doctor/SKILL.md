@@ -3,7 +3,6 @@ name: gitlab-doctor
 description: Validate GitLab workflow environment setup and configuration. Checks environment variables, git repository status, git remote configuration, GitLab API connectivity, token permissions, and issue directory. Provides actionable fixes for any issues found. Trigger when user mentions "validate gitlab setup", "check gitlab config", "gitlab troubleshoot", "test gitlab connection", or similar validation/troubleshooting requests.
 version: 1.0.1
 updated: 2026-01-27
-type: command
 ---
 
 # GitLab Workflow Doctor

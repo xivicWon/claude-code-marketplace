@@ -3,7 +3,6 @@ name: gitlab-mr
 description: Create GitLab merge request with auto-generated comprehensive description. Analyzes git history, fetches linked issue details, generates MR description including issue summary, requirements, implementation details, change statistics, and commit history. Supports auto-close linked issues. Trigger when user mentions "create MR", "create merge request", "open MR", "submit for review", or similar merge request creation requests.
 version: 1.0.1
 updated: 2026-01-27
-type: command
 ---
 
 # GitLab Merge Request

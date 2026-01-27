@@ -3,7 +3,6 @@ name: gitlab-issue-create
 description: Create GitLab issue and branch automatically. Asks for issue code, title, description, and labels interactively, then creates GitLab issue, generates branch name, checks out branch, and optionally pushes to remote. Trigger when user mentions "create GitLab issue", "new GitLab issue", "start new feature", "create issue and branch", or similar issue creation requests.
 version: 1.0.1
 updated: 2026-01-27
-type: command
 ---
 
 # GitLab Issue Create

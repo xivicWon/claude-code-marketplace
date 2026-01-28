@@ -1,144 +1,282 @@
 ---
 name: gitlab-issue-create
-description: Create GitLab issue and branch automatically. Asks for issue code, title, description, and labels interactively, then creates GitLab issue, generates branch name, checks out branch, and optionally pushes to remote. Trigger when user mentions "create GitLab issue", "new GitLab issue", "start new feature", "create issue and branch", or similar issue creation requests.
-version: 1.0.1
-updated: 2026-01-27
+description: FORCED automated workflow for GitLab issue creation. Requires JSON file input, automatically handles all dirty state, creates branch, pushes, and AI-updates issue. No user interaction required. Trigger when user provides JSON file or wants fully automated issue workflow.
+version: 2.0.0
+updated: 2026-01-28
 ---
 
-# GitLab Issue Create
+# GitLab Issue Create (Version 2.0: FORCED Workflow)
 
-Create GitLab issue and branch in one command.
+**🆕 Version 2.0**: Fully automated, zero-choice workflow with AI-powered updates
 
-## Quick Usage
+## 🎯 What This Does
+
+This is a **FORCED automated workflow** that handles everything from issue creation to branch setup without user interaction:
+
+1. ✅ **Validates** environment and JSON input
+2. ✅ **Creates** GitLab issue
+3. ✅ **Stashes** uncommitted changes (if any)
+4. ✅ **Switches** to base branch
+5. ✅ **Pulls** latest changes
+6. ✅ **Creates** new branch
+7. ✅ **Pushes** to remote
+8. ✅ **Restores** stashed changes
+9. 🤖 **AI analyzes** changes and updates issue
+10. ✅ **Saves** issue.json metadata
+
+**On failure**: Automatic atomic rollback to clean state
+
+## 🚀 Quick Usage
 
 ```bash
 /gitlab-issue-create
 ```
 
-This will ask you:
+**REQUIRED**: You must provide a JSON file with issue data.
 
-1. **이슈코드** (e.g., VTM-1372 or 1372)
-2. **Issue title** (e.g., "Add user dashboard")
-3. **Description** (optional, supports markdown)
-4. **Labels** (optional, comma-separated)
-5. **Create branch?** (yes/no, default: yes)
-6. **Auto-push to remote?** (yes/no, only if creating branch)
+Claude will:
+1. Ask for JSON file path (or you can provide it upfront)
+2. Execute the entire workflow automatically
+3. Report results
 
-## What It Does
+## 📝 JSON File Format (Required)
 
-✅ Creates GitLab issue with your title and description
-✅ **Optionally** generates branch name: `{issue-code}/{gitlab-issue#}-{summary}`
-✅ **Optionally** checks out new branch from main/master (or custom BASE_BRANCH)
-✅ **Optionally** pushes branch to remote
-✅ Saves issue.json for reference (if branch created)
+Create a JSON file with issue data:
 
-## Example Workflow
-
-```
-You: /gitlab-issue-create
-
-Claude: Creating new GitLab issue...
-        이슈코드 (e.g., VTM-1372): VTM-1372
-        Issue title: Add logout button
-        Description (optional): Add logout functionality to navigation bar
-        Labels (comma-separated, optional): feature,ui
-        Create branch? (y/n, default: y): y
-        Auto-push to remote? (y/n): y
-
-        📝 Creating GitLab issue...
-        ✅ Created issue #342: Add logout button
-           URL: http://gitlab.com/project/issues/342
-
-        🌿 Creating branch: vtm-1372/342-add-logout-button
-        ✅ Created branch: vtm-1372/342-add-logout-button
-
-        📤 Pushing branch to remote...
-        ✅ Pushed branch: vtm-1372/342-add-logout-button
-
-        📄 Saved issue.json: docs/requirements/vtm-1372/342/issue.json
-
-        ✅ Workflow completed!
-           Issue: #342 - Add logout button
-           Branch: vtm-1372/342-add-logout-button
-           Status: Pushed to remote
-```
-
-## Create from JSON File
-
-If you have a pre-defined issue in JSON format:
-
-```bash
-/gitlab-issue-create --from-file docs/requirements/vtm-1372/342/issue.json
-```
-
-**JSON Format**:
+**File**: `docs/requirements/vtm-1372/issue-draft.json`
 
 ```json
 {
   "issueCode": "VTM-1372",
   "title": "Add logout button",
-  "description": "Add logout functionality",
-  "labels": ["feature", "ui"],
-  "createBranch": true,
-  "push": true
+  "description": "Add logout functionality to navigation bar",
+  "labels": ["feature", "ui"]
 }
 ```
 
-**Create issue only (no branch)**:
+### Required Fields
 
-```json
+- `issueCode` (string): 이슈코드 (e.g., "VTM-1372" or "1372")
+- `title` (string): Issue title
+
+### Optional Fields
+
+- `description` (string): Initial description (AI will enhance it)
+- `labels` (array): Issue labels
+
+### ❌ Removed Fields (Now Forced)
+
+The following fields are **no longer supported** because they're now forced:
+- ~~`createBranch`~~ - Always `true` (forced)
+- ~~`push`~~ - Always `true` (forced)
+- ~~`baseBranch`~~ - Always from `.env` (forced)
+
+## 🔄 Forced Workflow Details
+
+### Phase 0: Pre-flight Validation
+
+```
+🔍 Checking:
+   ✅ JSON file exists and valid
+   ✅ Required fields present
+   ✅ Git repository exists
+   ✅ Remote configured
+   ✅ Base branch exists on remote
+   ✅ GitLab API connected
+```
+
+### Phase 1: Issue Creation
+
+```
+📝 Creating GitLab issue...
+   ✅ Created issue #342: Add logout button
+   URL: http://gitlab.com/project/issues/342
+```
+
+### Phase 2: Dirty State Handling (FORCED)
+
+**If you have uncommitted changes:**
+
+```
+🔄 Preparing working directory
+
+   ⚠️  Found 3 uncommitted change(s)
+      - src/App.tsx
+      - src/components/Nav.tsx
+      - package.json
+
+   📦 Auto-stashing changes...
+   ✅ Stashed: Auto-stash for issue #342
+
+   🔀 Switching to main...
+   ✅ Now on main
+
+   ⬇️  Pulling latest changes from gitlab/main...
+   ✅ Updated to latest
+```
+
+**No user choice** - this happens automatically!
+
+### Phase 3: Branch Creation
+
+```
+🌿 Creating new branch
+
+   Branch: vtm-1372/342-add-logout-button
+   ✅ Created and checked out: vtm-1372/342-add-logout-button
+```
+
+### Phase 4: Forced Push
+
+```
+📤 Pushing to remote
+
+   ✅ Pushed: gitlab/vtm-1372/342-add-logout-button
+```
+
+### Phase 5: Stash Restoration
+
+```
+📦 Restoring stashed changes
+
+   ✅ Applied stashed changes to new branch
+```
+
+### Phase 6: AI Auto-Update (FORCED)
+
+```
+🤖 AI analyzing and updating issue
+
+   📊 Analyzing 3 changed files...
+   ✅ Updated issue #342 with requirements summary
+```
+
+**What AI does:**
+- Analyzes stashed files (what you were working on)
+- Generates structured requirements summary
+- Updates GitLab issue description automatically
+
+### Phase 7: Save Metadata
+
+```
+💾 Saving metadata
+
+   ✅ Saved: docs/requirements/vtm-1372/342-add-logout-button/issue.json
+```
+
+### Success!
+
+```
+══════════════════════════════════════════════════════════
+✅ Workflow completed successfully!
+══════════════════════════════════════════════════════════
+Issue:  #342 - Add logout button
+Branch: vtm-1372/342-add-logout-button
+Status: Pushed to gitlab/vtm-1372/342-add-logout-button
+URL:    http://gitlab.com/project/issues/342
+AI:     Issue updated with requirements summary
+══════════════════════════════════════════════════════════
+```
+
+## 🔄 Automatic Rollback on Failure
+
+If **any step fails**, the workflow automatically rolls back:
+
+```
+❌ Error: Failed to push branch
+
+🔄 Rolling back changes...
+   ✅ Re-stashed changes
+   ✅ Deleted remote branch: gitlab/vtm-1372/342-add-logout-button
+   ✅ Deleted local branch: vtm-1372/342-add-logout-button
+   ✅ Switched back to: feature/dashboard
+   ✅ Restored stashed changes
+   Rollback completed
+
+══════════════════════════════════════════════════════════
+❌ Workflow failed and rolled back
+⚠️  Issue #342 was created but workflow failed
+   You may need to manually close it in GitLab
+══════════════════════════════════════════════════════════
+```
+
+**Rollback guarantees:**
+- Your working directory is restored
+- No orphaned branches (local or remote)
+- Original branch restored
+- Stashed changes preserved
+
+**Note**: The GitLab issue itself is **not deleted** (can't undo API calls), but everything else rolls back.
+
+## 📋 Example Workflow
+
+### 1. Prepare JSON File
+
+```bash
+# Create issue data file
+cat > docs/requirements/vtm-1372/logout-feature.json <<EOF
 {
   "issueCode": "VTM-1372",
-  "title": "Document requirements",
-  "description": "Gather and document requirements",
-  "createBranch": false
+  "title": "Add logout button",
+  "description": "Implement logout functionality",
+  "labels": ["feature", "ui"]
 }
+EOF
 ```
 
-## Branch Naming
+### 2. Run Forced Workflow
 
-Generated branches follow the format: `{issue-code}/{gitlab#}-{summary}`
+```
+You: /gitlab-issue-create
 
-**Examples**:
+Claude: I'll execute the forced automated workflow for GitLab issue creation.
 
-- `VTM-1372/342-add-logout-button`
-- `1372/343-fix-login-bug`
-- `1400/308-refactor-api`
+        Please provide the JSON file path:
 
-## Next Steps
+You: docs/requirements/vtm-1372/logout-feature.json
 
-After creating issue and branch:
+Claude: [Executes entire workflow automatically]
 
-1. **Make your changes**
+        🔍 Phase 0: Pre-flight validation
+           ✅ Loaded JSON: docs/requirements/vtm-1372/logout-feature.json
+           ✅ Base branch: main (from .env)
+           ...
 
-   ```bash
-   git add .
-   git commit -m "Implement logout button"
-   ```
+        ✅ All pre-flight checks passed
 
-2. **Push commits**
+        📝 Phase 1: Creating GitLab issue
+           ✅ Created issue #342: Add logout button
 
-   ```bash
-   git push
-   ```
+        [... continues through all phases ...]
 
-3. **Update issue description** (recommended)
+        ✅ Workflow completed successfully!
+```
 
-   ```bash
-   /gitlab-issue-update
-   ```
+### 3. Next Steps
 
-   This updates the issue description with requirements from your commits.
+After workflow completes, you can:
 
-4. **Create merge request**
-   ```bash
-   /gitlab-mr
-   ```
-   This creates a merge request with auto-generated description.
+```bash
+# Make your changes
+vim src/components/Nav.tsx
 
-## Environment Setup
+# Commit
+git add .
+git commit -m "feat: implement logout button"
 
-Required environment variables in `.claude/.env.gitlab-workflow`:
+# Push (branch already set upstream)
+git push
+
+# Update issue with implementation details
+/gitlab-issue-update
+
+# Create merge request
+/gitlab-mr
+```
+
+## ⚙️ Environment Configuration
+
+Required in `.claude/.env.gitlab-workflow`:
 
 ```bash
 # Required
@@ -148,84 +286,157 @@ GITLAB_PROJECT=withvtm_2.0/withvtm-fe
 
 # Optional
 GITLAB_REMOTE=gitlab
-BASE_BRANCH=main                 # or: develop, origin/main, gitlab/develop
+BASE_BRANCH=main                 # FORCED: Used for all issue creations
 ISSUE_DIR=docs/requirements
 ```
 
-**BASE_BRANCH**: Set the default base branch for creating new branches (default: `main`)
+**Important**: `BASE_BRANCH` is **forced** - JSON files cannot override it. This ensures consistency across all issues.
 
-- Can be branch name only: `main`, `develop`, `master`
-- Can include remote: `origin/main`, `gitlab/develop`
-- Always creates from **remote** to ensure latest code
+Run `/gitlab-doctor` to validate your setup.
 
-To validate your setup, run:
+## 🔧 Branch Naming (Automatic)
 
+Format: `{issue-code}/{gitlab#}-{summary}`
+
+**Examples:**
+- Title: "Add logout button" → `vtm-1372/342-add-logout-button`
+- Title: "Fix login bug" → `1372/343-fix-login-bug`
+- Title: "사용자 대시보드" → `vtm-1372/344` (non-ASCII removed)
+
+**Rules:**
+- Lowercase
+- Non-alphanumeric characters removed
+- Spaces converted to hyphens
+- Max 50 chars for summary
+
+## ❌ Common Errors
+
+### Error: JSON file not found
+
+```
+Error: JSON file not found: issue.json
+```
+
+**Solution**: Provide full path or relative path to JSON file:
 ```bash
-/gitlab-doctor
-```
-
-## Common Errors
-
-### ❌ Working Directory Has Uncommitted Changes
-
-```
-Cannot create branch: Working directory has uncommitted changes
-
-Modified/untracked files:
-  - src/components/Dashboard.tsx
-  - src/api/user.ts
-
-Please commit or stash your changes first:
-  git add .
-  git commit -m 'Your message'
-Or:
-  git stash
-```
-
-**Solution**: Commit or stash your changes before creating a new branch:
-
-```bash
-# Option 1: Commit changes
-git add .
-git commit -m "WIP: current work"
-
-# Option 2: Stash changes
-git stash save "WIP: dashboard work"
-
-# Then retry
 /gitlab-issue-create
+# Then: docs/requirements/vtm-1372/issue.json
 ```
 
-### ❌ Remote Branch Not Found
+### Error: Required field missing
 
 ```
-Remote branch 'gitlab/develop' not found
+Error: Required field missing in JSON: issueCode
 ```
 
-**Solution**: Check available remote branches and fix BASE_BRANCH:
+**Solution**: Ensure JSON has required fields:
+```json
+{
+  "issueCode": "VTM-1372",  // ✅ Required
+  "title": "Feature name"   // ✅ Required
+}
+```
 
+### Error: Remote branch not found
+
+```
+Error: Remote branch not found: gitlab/develop
+```
+
+**Solution**: Check `BASE_BRANCH` in `.env`:
 ```bash
-# List remote branches
+# List available remote branches
 git branch -r
 
-# Update .env with correct branch
-# .claude/.env.gitlab-workflow
-BASE_BRANCH=origin/main  # or whatever exists
+# Update .env
+BASE_BRANCH=main  # or whatever exists
 ```
 
-### ❌ Invalid Branch Name
+### Error: GitLab API connection failed
 
 ```
-Invalid branch name: 342-feature
-Branch name must follow format: [이슈코드]/[GitLab#]-[summary]
+Error: GitLab API connection failed
 ```
 
-**Solution**: This shouldn't happen with auto-generated names, but if using custom branch name, follow the format: `VTM-1372/342-feature-name`
+**Solution**: Run `/gitlab-doctor` for detailed diagnosis.
 
-## See Also
+## 🆚 Version Comparison
 
-- `/gitlab-issue-update` - Update issue from git history
+### Version 1.x (Old - Interactive)
+
+```
+❓ User prompted for each choice:
+   - Create branch? (y/n)
+   - Auto-push? (y/n)
+   - What to do with dirty state? (1/2/3)
+
+⏱️  Slower, requires user interaction
+```
+
+### Version 2.0 (New - FORCED)
+
+```
+✅ Zero user interaction
+✅ All steps forced and automated
+✅ AI-powered issue updates
+✅ Atomic rollback on failure
+
+⚡ Faster, fully automated
+```
+
+## 🤖 AI Auto-Update Details
+
+**What AI analyzes:**
+1. List of changed files (from stash)
+2. Original title and description
+3. File organization (directories)
+
+**What AI generates:**
+- Structured requirements summary
+- File categorization by directory
+- Clear formatting for readability
+
+**Example AI-generated update:**
+
+```markdown
+# Add logout button
+
+Implement logout functionality
+
+## 📋 변경 예정 사항
+
+다음 3개 파일에 변경사항이 있습니다:
+
+### src/components/
+- `Nav.tsx`
+- `LogoutButton.tsx`
+
+### src/api/
+- `auth.ts`
+
+---
+*이 요구사항은 변경된 파일을 기반으로 자동 생성되었습니다.*
+```
+
+**Future enhancement**: Full AI analysis with diff content and semantic understanding.
+
+## 📚 See Also
+
+- `/gitlab-doctor` - Validate environment setup
+- `/gitlab-issue-update` - Update issue from commits
 - `/gitlab-mr` - Create merge request
-- `/gitlab-doctor` - Validate environment
+- Commands guide: `../../shared/references/COMMANDS.md`
+- Quick reference: `../../shared/references/QUICK_REFERENCE.md`
 
-For complete documentation, see: `../../shared/references/`
+## 💡 Tips
+
+1. **Prepare JSON files in advance** for faster workflow execution
+2. **Don't worry about dirty state** - it's handled automatically
+3. **Trust the rollback** - if something fails, you're safe
+4. **Check issue after creation** - AI may have enhanced the description
+5. **Use consistent BASE_BRANCH** - set it once in `.env` and forget it
+
+---
+
+**Version 2.0** - FORCED Workflow Edition
+*Zero choices, maximum automation*

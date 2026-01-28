@@ -1,0 +1,6 @@
+{
+  "issueCode": "VTM-1372",
+  "title": "Add user profile page",
+  "description": "Implement user profile page with edit functionality",
+  "labels": ["feature", "ui", "user-management"]
+}

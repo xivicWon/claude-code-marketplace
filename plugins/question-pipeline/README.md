@@ -121,6 +121,58 @@ EXECUTION:
 - **0.5 ~ 0.7**: Ask user for clarification
 - **< 0.5**: Fallback to EXECUTION (safer path)
 
+## Usage
+
+### Auto-Classification Mode (Recommended)
+
+**The plugin includes hooks that automatically classify every user question** without manual invocation.
+
+#### How It Works
+
+When the plugin is installed:
+1. **SessionStart Hook** activates auto-classification for the entire session
+2. **UserPromptSubmit Hook** processes each user message
+3. Claude automatically classifies questions as EXPLORATION/DECISION/EXECUTION
+4. Appropriate pipeline is applied based on classification
+
+**No user action required** - classification happens transparently.
+
+#### Benefits
+- ✅ Zero manual skill invocation needed
+- ✅ Consistent question handling across all conversations
+- ✅ EXPLORATION questions get immediate, natural responses
+- ✅ EXECUTION questions get systematic analysis before implementation
+
+#### Disabling Auto-Classification
+
+If you want to disable automatic classification:
+
+```bash
+# Edit hook files to set enabled: false
+# plugins/question-pipeline/hooks/session-start.md
+# plugins/question-pipeline/hooks/user-prompt-submit.md
+```
+
+Or remove the hooks directory entirely:
+```bash
+rm -rf plugins/question-pipeline/hooks/
+```
+
+### Manual Skill Invocation
+
+You can still invoke skills manually when needed:
+
+```
+# Classify a specific question
+Use question-pipeline:question-classifier skill
+
+# Run full ambiguity scan
+Use question-pipeline:ambiguity-scanner skill
+
+# Clarify intent
+Use question-pipeline:intent-clarifier skill
+```
+
 ## Skills
 
 ### 0. QuestionClassifier (NEW)

@@ -198,7 +198,7 @@ def confirm_proceed() -> bool:
     """
     while True:
         try:
-            response = input("\n👉 Proceed with forced workflow? (Y/n): ").strip().lower()
+            response = input("\n👉 Create GitLab issue and branch with these details? (Y/n): ").strip().lower()
 
             if response in ['', 'y', 'yes']:
                 return True

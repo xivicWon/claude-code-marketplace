@@ -1,6 +1,6 @@
 {
   "name": "gitlab-collaboration",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Complete GitLab workflow automation plugin for team collaboration. Automates issue creation, branch management, and merge request workflows with intelligent dirty working directory handling. Includes interactive environment setup wizard.",
   "author": {
     "name": "xivic",

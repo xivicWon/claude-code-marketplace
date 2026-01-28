@@ -49,7 +49,7 @@ $ python shared/scripts/gitlab_workflow.py start --interactive
   Labels:      feature, ui, dashboard
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-👉 Proceed with forced workflow? (Y/n): y
+👉 Create GitLab issue and branch with these details? (Y/n): y
 
 ✅ JSON file created: /tmp/gitlab-issue-20260128_143022.json
 

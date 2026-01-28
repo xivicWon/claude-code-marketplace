@@ -70,6 +70,53 @@ class WorkflowError(Exception):
     pass
 
 
+def run_interactive_script(script_name: str) -> Optional[str]:
+    """
+    Run interactive script and extract JSON path from output
+
+    Args:
+        script_name: Name of the interactive script to run
+
+    Returns:
+        Path to generated JSON file, or None if failed
+    """
+    try:
+        # Get script directory (same directory as this file)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(script_dir, script_name)
+
+        # Check if script exists
+        if not os.path.exists(script_path):
+            print(f"Error: Interactive script not found: {script_path}", file=sys.stderr)
+            return None
+
+        # Run interactive script
+        result = subprocess.run(
+            [sys.executable, script_path],
+            capture_output=True,
+            text=True
+        )
+
+        # Check if successful
+        if result.returncode != 0:
+            print(f"Interactive script failed:", file=sys.stderr)
+            print(result.stderr, file=sys.stderr)
+            return None
+
+        # Extract JSON_PATH from output
+        for line in result.stdout.split('\n'):
+            if line.startswith('JSON_PATH='):
+                json_path = line.split('=', 1)[1].strip()
+                return json_path
+
+        print("Error: Could not find JSON_PATH in script output", file=sys.stderr)
+        return None
+
+    except Exception as e:
+        print(f"Error running interactive script: {e}", file=sys.stderr)
+        return None
+
+
 def load_env_file(env_file_path: str) -> None:
     """
     Load environment variables from .env file
@@ -1985,9 +2032,11 @@ Examples:
 
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
 
-    # Start workflow (Version 2.0: FORCED workflow with JSON-only)
-    start_parser = subparsers.add_parser('start', help='Start FORCED automated workflow (requires JSON file)')
-    start_parser.add_argument('--from-file', required=True, help='JSON file with issue data (REQUIRED)')
+    # Start workflow (Version 2.0: FORCED workflow with JSON or interactive)
+    start_parser = subparsers.add_parser('start', help='Start FORCED automated workflow')
+    start_parser.add_argument('--from-file', help='JSON file with issue data')
+    start_parser.add_argument('--interactive', '-i', action='store_true',
+                             help='Interactive mode (prompt for input)')
     start_parser.add_argument('--base', help='Base branch (default: from BASE_BRANCH env var)')
 
     # Create branch only
@@ -2002,13 +2051,15 @@ Examples:
 
     # Create MR
     mr_parser = subparsers.add_parser('mr', help='Create merge request')
-    mr_parser.add_argument('title', help='MR title')
+    mr_parser.add_argument('title', nargs='?', help='MR title (optional if using --interactive)')
     mr_parser.add_argument('--description', help='MR description')
     mr_parser.add_argument('--issue', type=int, help='Issue IID to link (auto-close)')
     mr_parser.add_argument('--source', help='Source branch (default: current branch)')
     mr_parser.add_argument('--target', default='main', help='Target branch (default: main)')
     mr_parser.add_argument('--keep-branch', action='store_true',
                           help='Keep source branch after merge')
+    mr_parser.add_argument('--interactive', '-i', action='store_true',
+                          help='Interactive mode (auto-detect and confirm)')
 
     # Init - initialize environment with interactive prompts
     init_parser = subparsers.add_parser('init', help='Initialize GitLab workflow environment with interactive setup')
@@ -2398,15 +2449,30 @@ Example:
 
     try:
         if args.command == 'start':
-            # Version 2.0: FORCED workflow with JSON-only input
-            if not args.from_file:
-                print("Error: --from-file is required for start command", file=sys.stderr)
-                print("Example: gitlab_workflow.py start --from-file issue.json", file=sys.stderr)
+            # Version 2.0: FORCED workflow with JSON or interactive input
+            json_file = args.from_file
+
+            # If interactive mode, run interactive script to generate JSON
+            if args.interactive:
+                print("🔄 Launching interactive mode...\n")
+                json_file = run_interactive_script('interactive_issue_create.py')
+
+                if not json_file:
+                    print("Error: Interactive mode failed to generate JSON", file=sys.stderr)
+                    sys.exit(1)
+
+            # Require either --from-file or --interactive
+            if not json_file:
+                print("Error: Either --from-file or --interactive is required for start command", file=sys.stderr)
+                print("Examples:", file=sys.stderr)
+                print("  gitlab_workflow.py start --from-file issue.json", file=sys.stderr)
+                print("  gitlab_workflow.py start --interactive", file=sys.stderr)
                 sys.exit(1)
 
-            # Execute forced workflow
+            # Execute forced workflow with JSON file
+            print(f"\n🚀 Starting forced workflow with: {json_file}\n")
             result = workflow.forced_workflow(
-                json_file_path=args.from_file,
+                json_file_path=json_file,
                 base_branch=args.base or base_branch_default
             )
 
@@ -2424,6 +2490,39 @@ Example:
             workflow.push_branch(branch_name)
 
         elif args.command == 'mr':
+            # Handle interactive mode
+            if args.interactive:
+                print("🔄 Launching interactive mode...\n")
+                json_file = run_interactive_script('interactive_mr_create.py')
+
+                if not json_file:
+                    print("Error: Interactive mode failed to generate JSON", file=sys.stderr)
+                    sys.exit(1)
+
+                # Load JSON and extract values
+                try:
+                    with open(json_file, 'r', encoding='utf-8') as f:
+                        mr_data = json.load(f)
+
+                    # Override args with JSON data
+                    args.title = mr_data['title']
+                    args.target = mr_data.get('targetBranch', args.target)
+                    args.issue = mr_data.get('issueIID', args.issue)
+
+                    print(f"✅ Loaded MR details from: {json_file}\n")
+
+                except Exception as e:
+                    print(f"Error: Failed to load JSON: {e}", file=sys.stderr)
+                    sys.exit(1)
+
+            # Validate title
+            if not args.title:
+                print("Error: MR title is required", file=sys.stderr)
+                print("Use: gitlab_workflow.py mr --interactive", file=sys.stderr)
+                print("Or:  gitlab_workflow.py mr 'MR Title'", file=sys.stderr)
+                sys.exit(1)
+
+            # Create MR
             source_branch = args.source or workflow.get_current_branch()
             mr = workflow.create_merge_request(
                 source_branch,

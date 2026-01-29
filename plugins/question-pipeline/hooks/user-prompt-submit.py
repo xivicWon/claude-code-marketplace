@@ -186,8 +186,13 @@ def format_classification_message(result: dict, user_prompt: str) -> str:
 
 def main():
     """Main entry point for UserPromptSubmit hook."""
+    # Debug log file
+    debug_log = os.path.join(os.path.dirname(__file__), 'hook-debug.log')
+
     print("user-prompt-submit hook started", file=sys.stderr)
     try:
+        with open(debug_log, 'a') as f:
+            f.write(f"\n=== Hook called at {__import__('datetime').datetime.now()} ===\n")
         # Read input from stdin
         input_data = json.load(sys.stdin)
 
@@ -202,12 +207,22 @@ def main():
         # Classify the question
         classification_result = classify_question(user_prompt)
 
+        # Debug log
+        with open(debug_log, 'a') as f:
+            f.write(f"User prompt: {user_prompt}\n")
+            f.write(f"Classification: {classification_result['classification']}\n")
+
         # Format message
         message = format_classification_message(classification_result, user_prompt)
 
-        # Output result
+        # Output result with visible systemMessage
+        cls_type = classification_result['classification']['type']
+        confidence = classification_result['classification']['confidence']
+        pipeline_msg = classification_result['pipelineMessage']
+
         output = {
             'continue': True,
+            'systemMessage': f'✓ 질문 분류: {cls_type} ({confidence:.0%} 신뢰도) - {pipeline_msg}',
             'suppressOutput': False,
             'hookSpecificOutput': {
                 'hookEventName': 'UserPromptSubmit',
@@ -215,10 +230,19 @@ def main():
             }
         }
 
+        # Debug log output
+        with open(debug_log, 'a') as f:
+            f.write(f"Output JSON:\n{json.dumps(output, indent=2, ensure_ascii=False)}\n")
+
         print(json.dumps(output), file=sys.stdout)
 
     except Exception as e:
         # On error, continue without classification
+        with open(debug_log, 'a') as f:
+            f.write(f"ERROR: {str(e)}\n")
+            import traceback
+            f.write(traceback.format_exc())
+
         error_output = {
             'continue': True,
             'systemMessage': f'Question classification error: {str(e)}'

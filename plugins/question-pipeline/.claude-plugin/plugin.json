@@ -1,5 +1,5 @@
 {
   "name": "question-pipeline",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Complete question processing pipeline with auto-classification: Automatically classifies every user question (EXPLORATION/DECISION/EXECUTION) and routes to appropriate processing pipeline. Includes ambiguity detection, intent clarification, pattern resolution, code generation, and drift detection."
 }
